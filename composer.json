@@ -1,0 +1,21 @@
+{
+    "name": "gemstracker/pseudonymize-gems-data",
+    "description": "Pseudonymize Gemstracker Respondent data",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Jasper van Gestel",
+            "email": "jvangestel@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "symfony/console": "^6.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gems\\Pseudonymize\\": "src"
+        }
+    }
+}
