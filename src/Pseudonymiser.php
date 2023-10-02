@@ -113,13 +113,13 @@ class Pseudonymiser
         $this->logger->log(sprintf('%s %s;', $prefix, $query));
     }
 
-    public function process(array $fields): void
+    public function process(array $fields, bool $testRun = true): void
     {
-        $this->processBulkQueries($fields);
-        $this->processFields($fields);
+        $this->processBulkQueries($fields, $testRun);
+        $this->processFields($fields, $testRun);
     }
 
-    public function processBulkQueries(array $fields): void
+    public function processBulkQueries(array $fields, bool $testRun = true): void
     {
         foreach($fields as $table => $settings) {
             $start = microtime(true);
@@ -135,7 +135,9 @@ class Pseudonymiser
                 $this->addGeneralizeToQuery($settings['generalize'], $queryBuilder);
             }
 
-            //$queryBuilder->executeQuery();
+            if ($testRun === false) {
+                $queryBuilder->executeQuery();
+            }
             $time = number_format(microtime(true) - $start, 3);
 
             $prefix = sprintf('[%s] ', $time);
@@ -144,7 +146,7 @@ class Pseudonymiser
         }
     }
 
-    public function processFields(array $fields): void
+    public function processFields(array $fields, bool $testRun = true): void
     {
         $faker = $this->createFaker();
 
@@ -176,7 +178,9 @@ class Pseudonymiser
 
                 $time = number_format(microtime(true) - $start, 3);
                 $prefix = sprintf('[%s] [%s] ', $i,$time);
-                //$updateQuery->executeQuery();
+                if ($testRun === false) {
+                    $updateQuery->executeQuery();
+                }
                 $this->logQuery($updateQuery, $prefix);
                 $i++;
             }
