@@ -1,12 +1,13 @@
 <?php
 
-namespace Gems\Pseudonymize;
+namespace Gems\Pseudonymise;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Faker\Factory;
 use Faker\Generator;
+use Gems\Pseudonymise\Log\PseudonymiserLoggerInterface;
 
 class Pseudonymiser
 {
@@ -19,10 +20,11 @@ class Pseudonymiser
     public function __construct(
         protected readonly Connection $connection,
         protected readonly array $config,
+        protected readonly PseudonymiserLoggerInterface|null $logger,
     )
     {
-        $this->locale = $config['pseudonymize']['fakerSettings']['locale'] ?? Factory::DEFAULT_LOCALE;
-        $this->seed = $config['pseudonymize']['fakerSettings']['seed'] ?? false;
+        $this->locale = $config['pseudonymise']['fakerSettings']['locale'] ?? Factory::DEFAULT_LOCALE;
+        $this->seed = $config['pseudonymise']['fakerSettings']['seed'] ?? false;
     }
 
     protected function filterRow(array $row, array $settings, Generator $faker): array
@@ -31,26 +33,13 @@ class Pseudonymiser
             $row = $this->setEmpty($row, $settings['empty']);
         }
         if (in_array('generalize', $this->perRowFilter) && isset($settings['generalize'])) {
-            $row = $this->setGeneralized($row, $settings['generalize']);
+            $row = $this->setGeneralizedPerRow($row, $settings['generalize']);
         }
         if (in_array('fake', $this->perRowFilter) && isset($settings['fake'])) {
             $row = $this->setFake($row, $settings['fake'], $faker);
         }
 
         return $row;
-    }
-    public function emptyFields(array $fields): void
-    {
-        foreach($fields as $table => $settings) {
-            if (isset($settings['empty'])) {
-                $queryBuilder = $this->connection->createQueryBuilder();
-                $queryBuilder->update($table);
-                foreach($settings['empty'] as $fieldName) {
-                    $queryBuilder->set($fieldName, null);
-                }
-                $queryBuilder->executeQuery();
-            }
-        }
     }
 
     protected function createFaker(): Generator
@@ -62,7 +51,7 @@ class Pseudonymiser
     {
         $fields = [];
         foreach($settings as $typeName => $typeSettings) {
-            if (!in_array($typeName, $this->perRowFilter)) {
+            if ($typeName !== 'key' && $typeName !== 'seedField' && !in_array($typeName, $this->perRowFilter)) {
                 continue;
             }
             if (is_string($typeSettings)) {
@@ -76,7 +65,7 @@ class Pseudonymiser
             $fields = array_merge($fields, array_keys($typeSettings));
         }
 
-        return $fields;
+        return array_unique($fields);
     }
 
     protected function getUpdateQuery(string $tableName, array $row, array $keys): QueryBuilder
@@ -103,27 +92,69 @@ class Pseudonymiser
         return $querybuilder;
     }
 
-    public function processBulk(array $fields): void
+    protected function hasRowSettings(array $tableSettings): bool
+    {
+        foreach($tableSettings as $typeName => $typeSettings) {
+            if (in_array($typeName, $this->perRowFilter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected function logQuery(QueryBuilder $queryBuilder, string $prefix = ''): void
+    {
+        $query = $queryBuilder->getSQL();
+        if ($queryBuilder->getParameters()) {
+            $query .= ' (' . join(', ', $queryBuilder->getParameters()) . ')';
+            print_r($queryBuilder->getParameters());
+        }
+
+        $this->logger->log(sprintf('%s %s;', $prefix, $query));
+    }
+
+    public function process(array $fields): void
+    {
+        $this->processBulkQueries($fields);
+        $this->processFields($fields);
+    }
+
+    public function processBulkQueries(array $fields): void
     {
         foreach($fields as $table => $settings) {
+            $start = microtime(true);
             $queryBuilder = $this->connection->createQueryBuilder();
             $queryBuilder->update($table);
 
             if (isset($settings['empty'])) {
                 foreach($settings['empty'] as $emptyField) {
-                    $queryBuilder->set($emptyField, null);
+                    $queryBuilder->set($emptyField, 'NULL');
                 }
             }
+            if (isset($settings['generalize'])) {
+                $this->addGeneralizeToQuery($settings['generalize'], $queryBuilder);
+            }
+
+            //$queryBuilder->executeQuery();
+            $time = number_format(microtime(true) - $start, 3);
+
+            $prefix = sprintf('[%s] ', $time);
+
+            $this->logQuery($queryBuilder, $prefix);
         }
     }
 
     public function processFields(array $fields): void
     {
-        $start = microtime(true);
-
         $faker = $this->createFaker();
 
         foreach($fields as $table => $settings) {
+
+            if (!$this->hasRowSettings($settings)) {
+                continue;
+            }
+
+
             $fields = $this->getFieldsFromSettings($settings);
             $queryBuilder = $this->connection->createQueryBuilder();
             $queryBuilder
@@ -132,8 +163,9 @@ class Pseudonymiser
 
             $resultSet = $queryBuilder->executeQuery();
 
+            $i = 1;
             while ($row = $resultSet->fetchAssociative()) {
-
+                $start = microtime(true);
                 if ($this->seed && isset($settings['seedField'], $row[$settings['seedField']])) {
                     $faker->seed($row[$settings['seedField']]);
                 }
@@ -142,10 +174,11 @@ class Pseudonymiser
 
                 $updateQuery = $this->getUpdateQuery($table, $filteredRow, $settings['key']);
 
-                print_r($row);
-                print_r($filteredRow);
-                echo $updateQuery->getSql() . "\n";
-                print_r($updateQuery->getParameters());
+                $time = number_format(microtime(true) - $start, 3);
+                $prefix = sprintf('[%s] [%s] ', $i,$time);
+                //$updateQuery->executeQuery();
+                $this->logQuery($updateQuery, $prefix);
+                $i++;
             }
         }
 
@@ -209,7 +242,57 @@ class Pseudonymiser
         return $row;
     }
 
-    protected function setGeneralized(array $row, array $generalizeSettings): array
+    protected function addGeneralizeToQuery(array $generalizeSettings, QueryBuilder $queryBuilder): void
+    {
+        foreach($generalizeSettings as $fieldName => $settings) {
+            if (is_array($settings)) {
+                if (isset($settings['date'])) {
+
+                    $year = $settings['date']['year'] ?? "DATEFORMAT($fieldName, '%Y')";
+                    $month = $settings['date']['month'] ?? "DATEFORMAT($fieldName, '%m')";
+                    $day = $settings['date']['day'] ?? "DATEFORMAT($fieldName, '%d')";
+
+                    $update = "CONCAT($year, '-', $month, '-', $day)";
+                    $queryBuilder->set($fieldName, $update);
+
+                    continue;
+                }
+
+                if (isset($settings['datetime'])) {
+                    $year = $settings['date']['year'] ?? "DATEFORMAT($fieldName, '%Y')";
+                    $month = $settings['date']['month'] ?? "DATEFORMAT($fieldName, '%m')";
+                    $day = $settings['date']['day'] ?? "DATEFORMAT($fieldName, '%d')";
+
+                    $hour = $settings['date']['hour'] ?? "DATEFORMAT($fieldName, '%Y')";
+                    $minute = $settings['date']['minute'] ?? "DATEFORMAT($fieldName, '%m')";
+                    $second = $settings['date']['second'] ?? "DATEFORMAT($fieldName, '%d')";
+
+                    $update = "CONCAT($year, '-', $month, '-', $day, ' ',  $hour, ':', $minute, ':', $second)";
+                    $queryBuilder->set($fieldName, $update);
+
+                    continue;
+                }
+
+                if (isset($settings['email'])) {
+                    $newParts = [];
+                    foreach($settings['email'] as $setting) {
+                        if (str_starts_with($setting, '{') && str_ends_with($setting, '}')) {
+                            $setting = substr($setting, 1, -1);
+                            $newParts[] = $setting;
+                            continue;
+                        }
+                        $newParts[] = "'$setting'";
+                    }
+
+                    $queryBuilder->set($fieldName, 'CONCAT(' . join(',', $newParts) . ')');
+                }
+            } else {
+                $queryBuilder->set($fieldName, "'$settings'");
+            }
+        }
+    }
+
+    protected function setGeneralizedPerRow(array $row, array $generalizeSettings): array
     {
         foreach($generalizeSettings as $fieldName => $settings) {
             if ($row[$fieldName] !== null) {

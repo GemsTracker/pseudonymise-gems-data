@@ -1,6 +1,6 @@
 {
-    "name": "gemstracker/pseudonymize-gems-data",
-    "description": "Pseudonymize Gemstracker Respondent data",
+    "name": "gemstracker/pseudonymise-gems-data",
+    "description": "Pseudonymise Gemstracker Respondent data",
     "type": "library",
     "license": "proprietary",
     "authors": [
@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Gems\\Pseudonymize\\": "src"
+            "Gems\\Pseudonymise\\": "src"
         }
     }
 }

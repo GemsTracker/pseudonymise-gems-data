@@ -1,13 +1,13 @@
 <?php
 
-namespace Gems\Pseudonymize;
+namespace Gems\Pseudonymise;
 
 class ConfigProvider
 {
     public function __invoke(): array
     {
         return [
-            'pseudonymize' => [
+            'pseudonymise' => [
                 'fakerSettings' => [
                     'seed' => true,
                     'locale' => 'nl_NL',
