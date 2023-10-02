@@ -12,6 +12,8 @@ class Pseudonymiser
 {
     protected readonly string $locale;
 
+    protected array $perRowFilter = ['fake'];
+
     protected readonly bool $seed;
 
     public function __construct(
@@ -25,13 +27,13 @@ class Pseudonymiser
 
     protected function filterRow(array $row, array $settings, Generator $faker): array
     {
-        if (isset($settings['empty'])) {
+        if (in_array('empty', $this->perRowFilter) && isset($settings['empty'])) {
             $row = $this->setEmpty($row, $settings['empty']);
         }
-        if (isset($settings['generalize'])) {
+        if (in_array('generalize', $this->perRowFilter) && isset($settings['generalize'])) {
             $row = $this->setGeneralized($row, $settings['generalize']);
         }
-        if (isset($settings['fake'])) {
+        if (in_array('fake', $this->perRowFilter) && isset($settings['fake'])) {
             $row = $this->setFake($row, $settings['fake'], $faker);
         }
 
@@ -59,7 +61,10 @@ class Pseudonymiser
     protected function getFieldsFromSettings(array $settings): array
     {
         $fields = [];
-        foreach($settings as $typeSettings) {
+        foreach($settings as $typeName => $typeSettings) {
+            if (!in_array($typeName, $this->perRowFilter)) {
+                continue;
+            }
             if (is_string($typeSettings)) {
                 $fields[] = $typeSettings;
                 continue;
@@ -98,9 +103,22 @@ class Pseudonymiser
         return $querybuilder;
     }
 
+    public function processBulk(array $fields): void
+    {
+        foreach($fields as $table => $settings) {
+            $queryBuilder = $this->connection->createQueryBuilder();
+            $queryBuilder->update($table);
+
+            if (isset($settings['empty'])) {
+                foreach($settings['empty'] as $emptyField) {
+                    $queryBuilder->set($emptyField, null);
+                }
+            }
+        }
+    }
+
     public function processFields(array $fields): void
     {
-
         $start = microtime(true);
 
         $faker = $this->createFaker();
