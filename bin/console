@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Doctrine\DBAL\DriverManager;
+use Symfony\Component\Console\Application;
+use Gems\Pseudonymise\ConfigProvider;
+use Gems\Pseudonymise\Command\Pseudonymise;
+
+$config = (new ConfigProvider())();
+
+$app = new Application();
+
+$databaseConfig = [
+    'driver'    => 'pdo_mysql',
+    'host'      => getenv('DB_HOST') ?? null,
+    'username'  => getenv('DB_USER') ?? null,
+    'password'  => getenv('DB_PASS') ?? null,
+    'database'  => getenv('DB_NAME') ?? null,
+];
+
+$connection = DriverManager::getConnection($databaseConfig);
+
+$pseudonymiseCommand = new Pseudonymise($connection, $config);
+
+$app->add($pseudonymiseCommand);
+
+$app->run();
