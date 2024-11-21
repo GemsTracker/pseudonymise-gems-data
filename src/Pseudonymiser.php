@@ -252,9 +252,9 @@ class Pseudonymiser
             if (is_array($settings)) {
                 if (isset($settings['date'])) {
 
-                    $year = $settings['date']['year'] ?? "DATEFORMAT($fieldName, '%Y')";
-                    $month = $settings['date']['month'] ?? "DATEFORMAT($fieldName, '%m')";
-                    $day = $settings['date']['day'] ?? "DATEFORMAT($fieldName, '%d')";
+                    $year = $settings['date']['year'] ?? "DATE_FORMAT($fieldName, '%Y')";
+                    $month = $settings['date']['month'] ?? "DATE_FORMAT($fieldName, '%m')";
+                    $day = $settings['date']['day'] ?? "DATE_FORMAT($fieldName, '%d')";
 
                     $update = "CONCAT($year, '-', $month, '-', $day)";
                     $queryBuilder->set($fieldName, $update);
@@ -263,13 +263,14 @@ class Pseudonymiser
                 }
 
                 if (isset($settings['datetime'])) {
-                    $year = $settings['date']['year'] ?? "DATEFORMAT($fieldName, '%Y')";
-                    $month = $settings['date']['month'] ?? "DATEFORMAT($fieldName, '%m')";
-                    $day = $settings['date']['day'] ?? "DATEFORMAT($fieldName, '%d')";
 
-                    $hour = $settings['date']['hour'] ?? "DATEFORMAT($fieldName, '%Y')";
-                    $minute = $settings['date']['minute'] ?? "DATEFORMAT($fieldName, '%m')";
-                    $second = $settings['date']['second'] ?? "DATEFORMAT($fieldName, '%d')";
+                    $year = $settings['datetime']['year'] ?? "DATE_FORMAT($fieldName, '%Y')";
+                    $month = $settings['datetime']['month'] ?? "DATE_FORMAT($fieldName, '%m')";
+                    $day = $settings['datetime']['day'] ?? "DATE_FORMAT($fieldName, '%d')";
+
+                    $hour = $settings['datetime']['hour'] ?? "DATE_FORMAT($fieldName, '%H')";
+                    $minute = $settings['datetime']['minute'] ?? "DATE_FORMAT($fieldName, '%i')";
+                    $second = $settings['datetime']['second'] ?? "DATE_FORMAT($fieldName, '%s')";
 
                     $update = "CONCAT($year, '-', $month, '-', $day, ' ',  $hour, ':', $minute, ':', $second)";
                     $queryBuilder->set($fieldName, $update);
