@@ -22,7 +22,6 @@ class ConfigProvider
                             'grs_gender' => null,
                             'grs_first_name' => 'firstName',
                             'grs_surname_prefix' => null,
-
                             'grs_last_name' => 'lastName',
                         ],
                         'generalize' => [
@@ -31,13 +30,12 @@ class ConfigProvider
                                     'day' => 15,
                                 ],
                             ],
+                            'grs_first_name' => 'test',
+                            'grs_surname_prefix' => null,
+                            'grs_initials_name' => 'T.',
+                            'grs_last_name' => 'TEST'
                         ],
                         'empty' => [
-                            //'grs_raw_surname_prefix',
-                            //'grs_raw_last_name',
-                            //'grs_partner_surname_prefix',
-                            //'grs_partner_last_name',
-                            //'grs_last_name_order',
                             'grs_address_1',
                             'grs_address_2',
                             'grs_zipcode',
