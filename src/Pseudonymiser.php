@@ -163,6 +163,14 @@ class Pseudonymiser
                 ->select(...$fields)
                 ->from($table);
 
+            // Clone the QueryBuilder for the count query
+            $countQueryBuilder = clone $queryBuilder;
+            $countQueryBuilder->select('COUNT(*) AS total');
+
+            // Execute the count query
+            $countResult = $countQueryBuilder->executeQuery()->fetchAssociative();
+            $totalCount = (int) $countResult['total'];
+
             $resultSet = $queryBuilder->executeQuery();
 
             $i = 1;
@@ -177,7 +185,7 @@ class Pseudonymiser
                 $updateQuery = $this->getUpdateQuery($table, $filteredRow, $settings['key']);
 
                 $time = number_format(microtime(true) - $start, 3);
-                $prefix = sprintf('[%s] [%s] ', $i,$time);
+                $prefix = sprintf('[%s/%s] [%s] ', $i, $totalCount, $time);
                 if ($testRun === false) {
                     $updateQuery->executeQuery();
                 }
