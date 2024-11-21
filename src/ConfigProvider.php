@@ -42,7 +42,6 @@ class ConfigProvider
                             'grs_city',
                             'grs_phone_1',
                             'grs_phone_2',
-                            //'grs_phone_3',
                         ],
                     ],
                     'gems__respondent2org' => [
@@ -55,6 +54,8 @@ class ConfigProvider
                             'gr2o_email' => [
                                 'email' => [
                                     '{gr2o_patient_nr}',
+                                    '@',
+                                    '{gr2o_id_organization}',
                                     '@example.test',
                                 ],
                             ],
