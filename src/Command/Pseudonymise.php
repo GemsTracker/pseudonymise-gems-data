@@ -7,6 +7,7 @@ use Gems\Pseudonymise\Log\ConsoleLogger;
 use Gems\Pseudonymise\Pseudonymiser;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -21,6 +22,12 @@ class Pseudonymise extends Command
     {
         parent::__construct();
     }
+
+    protected function configure()
+    {
+        $this->addArgument('execute', InputArgument::OPTIONAL, 'actually run the queries. Use 1 to execute', 0);
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $logger = new ConsoleLogger($input, $output);
@@ -31,7 +38,12 @@ class Pseudonymise extends Command
             return Command::FAILURE;
         }
 
-        $pseudonymiser->process($this->config['pseudonymise']['fields']);
+        $testRun = true;
+        if ($input->getArgument('execute') == 1) {
+            $testRun = false;
+        }
+
+        $pseudonymiser->process($this->config['pseudonymise']['fields'], $testRun);
 
         return Command::SUCCESS;
     }
