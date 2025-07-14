@@ -42,7 +42,7 @@ class Pseudonymiser
         return $row;
     }
 
-    protected function createFaker(): Generator
+    public function createFaker(): Generator
     {
         return Factory::create($this->locale);
     }
@@ -197,7 +197,7 @@ class Pseudonymiser
         echo sprintf('Finished in %s sec.', (microtime(true) - $start));
     }
 
-    protected function setEmpty(array $row, array $emptySettings): array
+    public function setEmpty(array $row, array $emptySettings): array
     {
         foreach($emptySettings as $fieldName) {
             if (isset($row[$fieldName])) {
@@ -208,7 +208,7 @@ class Pseudonymiser
         return $row;
     }
 
-    protected function setFake(array $row, array $fakeSettings, Generator $faker): array
+    public function setFake(array $row, array $fakeSettings, Generator $faker): array
     {
         foreach($fakeSettings as $fieldName => $methodName) {
             /*if ($methodName !== null && !method_exists($faker, $methodName)) {
@@ -305,7 +305,7 @@ class Pseudonymiser
         }
     }
 
-    protected function setGeneralizedPerRow(array $row, array $generalizeSettings): array
+    public function setGeneralizedPerRow(array $row, array $generalizeSettings): array
     {
         foreach($generalizeSettings as $fieldName => $settings) {
             if ($row[$fieldName] !== null) {
