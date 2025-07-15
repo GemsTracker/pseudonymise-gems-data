@@ -27,6 +27,23 @@ class Pseudonymiser
         $this->seed = $config['pseudonymise']['fakerSettings']['seed'] ?? false;
     }
 
+    public function createFaker(): Generator
+    {
+        return Factory::create($this->locale);
+    }
+
+    protected function createFromFormat(string $format, mixed $value): DateTimeImmutable
+    {
+        if ($value instanceof DateTimeImmutable) {
+            return $value;
+        }
+        if ($value instanceof \DateTime) {
+            return DateTimeImmutable::createFromMutable($value);
+        }
+
+        return DateTimeImmutable::createFromFormat($format, $value);
+    }
+
     protected function filterRow(array $row, array $settings, Generator $faker): array
     {
         if (in_array('empty', $this->perRowFilter) && isset($settings['empty'])) {
@@ -40,11 +57,6 @@ class Pseudonymiser
         }
 
         return $row;
-    }
-
-    public function createFaker(): Generator
-    {
-        return Factory::create($this->locale);
     }
 
     protected function getFieldsFromSettings(array $settings): array
@@ -308,10 +320,10 @@ class Pseudonymiser
     public function setGeneralizedPerRow(array $row, array $generalizeSettings): array
     {
         foreach($generalizeSettings as $fieldName => $settings) {
-            if ($row[$fieldName] !== null) {
+            if (array_key_exists($fieldName, $row) && ($row[$fieldName] !== null)) {
                 if (is_array($settings)) {
                     if (isset($settings['date'])) {
-                        $date = DateTimeImmutable::createFromFormat('Y-m-d', $row[$fieldName]);
+                        $date = $this->createFromFormat('Y-m-d', $row[$fieldName]);
                         $year = $settings['date']['year'] ?? $date->format('Y');
                         $month = $settings['date']['month'] ?? $date->format('m');
                         $day = $settings['date']['day'] ?? $date->format('d');
@@ -321,7 +333,7 @@ class Pseudonymiser
                     }
 
                     if (isset($settings['datetime'])) {
-                        $date = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $row[$fieldName]);
+                        $date = $this->createFromFormat('Y-m-d H:i:s', $row[$fieldName]);
 
                         $year = $settings['datetime']['year'] ?? $date->format('Y');
                         $month = $settings['datetime']['month'] ?? $date->format('m');
