@@ -223,6 +223,9 @@ class Pseudonymiser
     public function setFake(array $row, array $fakeSettings, Generator $faker): array
     {
         foreach($fakeSettings as $fieldName => $methodName) {
+            if (!array_key_exists($fieldName, $row) || $row[$fieldName] === null) {
+                continue;
+            }
             /*if ($methodName !== null && !method_exists($faker, $methodName)) {
                 throw new \Exception(sprintf('Faker does not have method %s', $methodName));
             }*/
@@ -320,6 +323,9 @@ class Pseudonymiser
     public function setGeneralizedPerRow(array $row, array $generalizeSettings): array
     {
         foreach($generalizeSettings as $fieldName => $settings) {
+            if (!array_key_exists($fieldName, $row) || $row[$fieldName] === null) {
+                continue;
+            }
             if (array_key_exists($fieldName, $row) && ($row[$fieldName] !== null)) {
                 if (is_array($settings)) {
                     if (isset($settings['date'])) {
