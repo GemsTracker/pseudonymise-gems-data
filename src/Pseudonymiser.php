@@ -326,7 +326,6 @@ class Pseudonymiser
             if (!array_key_exists($fieldName, $row) || $row[$fieldName] === null) {
                 continue;
             }
-            if (array_key_exists($fieldName, $row) && ($row[$fieldName] !== null)) {
                 if (is_array($settings)) {
                     if (isset($settings['date'])) {
                         $date = $this->createFromFormat('Y-m-d', $row[$fieldName]);
@@ -368,7 +367,6 @@ class Pseudonymiser
                 } else {
                     $row[$fieldName] = $settings;
                 }
-            }
         }
 
         return $row;
