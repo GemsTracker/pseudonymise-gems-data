@@ -223,6 +223,9 @@ class Pseudonymiser
     public function setFake(array $row, array $fakeSettings, Generator $faker): array
     {
         foreach($fakeSettings as $fieldName => $methodName) {
+            if (!array_key_exists($fieldName, $row) || $row[$fieldName] === null) {
+                continue;
+            }
             /*if ($methodName !== null && !method_exists($faker, $methodName)) {
                 throw new \Exception(sprintf('Faker does not have method %s', $methodName));
             }*/
@@ -320,48 +323,49 @@ class Pseudonymiser
     public function setGeneralizedPerRow(array $row, array $generalizeSettings): array
     {
         foreach($generalizeSettings as $fieldName => $settings) {
-            if (array_key_exists($fieldName, $row) && ($row[$fieldName] !== null)) {
-                if (is_array($settings)) {
-                    if (isset($settings['date'])) {
-                        $date = $this->createFromFormat('Y-m-d', $row[$fieldName]);
-                        $year = $settings['date']['year'] ?? $date->format('Y');
-                        $month = $settings['date']['month'] ?? $date->format('m');
-                        $day = $settings['date']['day'] ?? $date->format('d');
-                        $newDate = $date->setDate($year, $month, $day);
-                        $row[$fieldName] = $newDate->format('Y-m-d');
-                        continue;
-                    }
-
-                    if (isset($settings['datetime'])) {
-                        $date = $this->createFromFormat('Y-m-d H:i:s', $row[$fieldName]);
-
-                        $year = $settings['datetime']['year'] ?? $date->format('Y');
-                        $month = $settings['datetime']['month'] ?? $date->format('m');
-                        $day = $settings['datetime']['day'] ?? $date->format('d');
-                        $newDate = $date->setDate($year, $month, $day);
-
-                        $hour = $settings['datetime']['hour'] ?? $date->format('H');
-                        $minute = $settings['datetime']['minute'] ?? $date->format('i');
-                        $seconds = $settings['datetime']['second'] ?? $date->format('s');
-                        $newDate = $newDate->setTime($hour, $minute, $seconds);
-
-                        $row[$fieldName] = $newDate->format('Y-m-d H:i:s');
-                        continue;
-                    }
-
-                    if (isset($settings['email'])) {
-                        $newParts = [];
-                        foreach($settings['email'] as $setting) {
-                            if (str_starts_with($setting, '{') && str_ends_with($setting, '}') && isset($row[substr($setting, 1, -1)])) {
-                                $setting = $row[substr($setting, 1, -1)];
-                            }
-                            $newParts[] = $setting;
-                        }
-                        $row[$fieldName] = join('', $newParts);
-                    }
-                } else {
-                    $row[$fieldName] = $settings;
+            if (!array_key_exists($fieldName, $row) || $row[$fieldName] === null) {
+                continue;
+            }
+            if (is_array($settings)) {
+                if (isset($settings['date'])) {
+                    $date = $this->createFromFormat('Y-m-d', $row[$fieldName]);
+                    $year = $settings['date']['year'] ?? $date->format('Y');
+                    $month = $settings['date']['month'] ?? $date->format('m');
+                    $day = $settings['date']['day'] ?? $date->format('d');
+                    $newDate = $date->setDate($year, $month, $day);
+                    $row[$fieldName] = $newDate->format('Y-m-d');
+                    continue;
                 }
+
+                if (isset($settings['datetime'])) {
+                    $date = $this->createFromFormat('Y-m-d H:i:s', $row[$fieldName]);
+
+                    $year = $settings['datetime']['year'] ?? $date->format('Y');
+                    $month = $settings['datetime']['month'] ?? $date->format('m');
+                    $day = $settings['datetime']['day'] ?? $date->format('d');
+                    $newDate = $date->setDate($year, $month, $day);
+
+                    $hour = $settings['datetime']['hour'] ?? $date->format('H');
+                    $minute = $settings['datetime']['minute'] ?? $date->format('i');
+                    $seconds = $settings['datetime']['second'] ?? $date->format('s');
+                    $newDate = $newDate->setTime($hour, $minute, $seconds);
+
+                    $row[$fieldName] = $newDate->format('Y-m-d H:i:s');
+                    continue;
+                }
+
+                if (isset($settings['email'])) {
+                    $newParts = [];
+                    foreach($settings['email'] as $setting) {
+                        if (str_starts_with($setting, '{') && str_ends_with($setting, '}') && isset($row[substr($setting, 1, -1)])) {
+                            $setting = $row[substr($setting, 1, -1)];
+                        }
+                        $newParts[] = $setting;
+                    }
+                    $row[$fieldName] = join('', $newParts);
+                }
+            } else {
+                $row[$fieldName] = $settings;
             }
         }
 
