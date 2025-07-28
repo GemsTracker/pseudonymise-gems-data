@@ -54,9 +54,9 @@ class ConfigProvider
                             'gr2o_email' => [
                                 'email' => [
                                     '{gr2o_patient_nr}',
-                                    '@',
+                                    '@org',
                                     '{gr2o_id_organization}',
-                                    '@example.test',
+                                    'example.test',
                                 ],
                             ],
                         ],
